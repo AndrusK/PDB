@@ -1,5 +1,6 @@
 import discord
 import argparse
+import xlsxwriter
 import time
 import schedule
 from datetime import datetime
@@ -9,6 +10,7 @@ import json
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Client(intents=intents)
+config_file = ""
 user_data = []
 whitelist = []
 TOKEN = ""
@@ -46,6 +48,19 @@ def read_config(cfg_path):
         TOKEN = field['token']
         for user in field['whitelisted_users']:
             whitelist.append(user)
+
+def argument_parser_init():
+    parser = argparse.ArgumentParser(
+                    prog = 'PDB (creative name coming soon)',
+                    description = 'Simple discord bot to monitor for inactivity and generally suspicous accounts')
+    parser.add_argument('-c', '--config', 
+                        help='The config file you\'d like to load. Check formatting @ github.com/AndrusK/PDB/config.json',
+                        required=True,
+                        dest='config_file',
+                        action='store'
+                        )
+    args = vars(parser.parse_args())
+    return args["config_file"]
 
 def str_time(time_object):
     time_object.strftime("%m-%d-%Y")
@@ -102,5 +117,6 @@ def main(token):
     client.run(token)
 
 if __name__ == '__main__':
-    read_config("config.json")
+    config_location = argument_parser_init()
+    read_config(config_location)
     main(TOKEN)
