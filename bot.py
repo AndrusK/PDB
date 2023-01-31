@@ -1,5 +1,6 @@
 import discord
 import argparse
+import xlsxwriter
 import time
 import schedule
 from datetime import datetime
