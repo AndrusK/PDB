@@ -1,9 +1,7 @@
 import discord
-import xlsxwriter
 import argparse
 import time
 import schedule
-import asyncio
 from datetime import datetime
 import threading
 import json
@@ -16,48 +14,6 @@ whitelist = []
 TOKEN = ""
 HIDDEN_CHANNEL_ID = ""
 
-def read_config(cfg_path):
-    global TOKEN
-    with open(cfg_path, 'r') as f:
-        field = json.load(f)
-        TOKEN = field['token']
-        for user in field['whitelisted_users']:
-            whitelist.append(user)
-
-def str_time(time_object):
-    time_object.strftime("%m-%d-%Y")
-
-def days_since_post(last_post):
-    if not last_post == None:
-        return (datetime.now() - last_post).days
-    else:
-        return "No posts recorded"
-
-def first_run():
-    for guild in client.guilds:
-        for member in guild.members:
-            user_data.append(DiscordMember(member.id, member.name, member.joined_at, member.created_at))
-
-
-
-def generate_excel_sheet(discord_members):
-    return 0
-def upload_excel_sheet(filepath, channel):
-    return 0
-
-def timed_functionality():
-    schedule.every().day.at("20:00").do(run_daily)
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
-def run_daily():
-    print("function ran successfully")
-
-
-
-
-    
 class DiscordMember:
     def __init__(self, id, name, join_date, create_date):
         self.id = id
@@ -82,6 +38,42 @@ class DiscordMember:
                 'suspicious':self.suspicious
                 
                 }
+
+def read_config(cfg_path):
+    global TOKEN
+    with open(cfg_path, 'r') as f:
+        field = json.load(f)
+        TOKEN = field['token']
+        for user in field['whitelisted_users']:
+            whitelist.append(user)
+
+def str_time(time_object):
+    time_object.strftime("%m-%d-%Y")
+
+def days_since_post(last_post):
+    if not last_post == None:
+        return (datetime.now() - last_post).days
+    else:
+        return "No posts recorded"
+
+def first_run():
+    for guild in client.guilds:
+        for member in guild.members:
+            user_data.append(DiscordMember(member.id, member.name, member.joined_at, member.created_at))
+
+def generate_excel_sheet(discord_members):
+    return 0
+def upload_excel_sheet(filepath, channel):
+    return 0
+
+def timed_functionality():
+    schedule.every().day.at("20:00").do(run_daily)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+def run_daily():
+    print("function ran successfully")
 
 @client.event
 async def on_ready():
@@ -108,7 +100,6 @@ def main(token):
     thread = threading.Thread(target=timed_functionality)
     thread.start()
     client.run(token)
-    
 
 if __name__ == '__main__':
     read_config("config.json")
