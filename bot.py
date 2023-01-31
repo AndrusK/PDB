@@ -3,7 +3,7 @@ import argparse
 import xlsxwriter
 import time
 import schedule
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import json
 
@@ -63,7 +63,7 @@ def argument_parser_init():
     return args["config_file"]
 
 def str_time(time_object):
-    time_object.strftime("%m-%d-%Y")
+    return time_object.strftime("%m-%d-%Y")
 
 def days_since_post(last_post):
     if not last_post == None:
@@ -95,8 +95,11 @@ async def on_ready():
     print(f'Connected to Discord with user {client.user}')
     first_run()
     for member in user_data:
-        if str_time(member.join_date) == str_time(member.create_date):
-            print(f'[Suspicious] Join/Create Day Match: {member.__enumerate__()}')
+
+        if str_time(member.create_date) == str_time(member.join_date):
+             print(f'[Suspicious] Join/Create day match: {member.__enumerate__()}')
+        elif member.create_date + timedelta(days = 90) >= member.create_date:
+            print(f'[Possibly Suspicious] Join/Create within 90 days: {member.__enumerate__()}')
 
 @client.event
 async def on_member_join(member):
