@@ -28,7 +28,7 @@ class DiscordMember:
         if not self.id in whitelist:
             if str_time(self.create_date) == str_time(self.join_date):
                 self.suspicious_score = 2
-            elif self.create_date + timedelta(days = 90) >= self.create_date:
+            elif self.create_date + timedelta(days = 90) >= self.join_date:
                 self.suspicious_score = 1
             else:
                 self.suspicious_score = 0
@@ -100,6 +100,8 @@ def run_daily():
 async def on_ready():
     print(f'Connected to Discord with user {client.user}')
     first_run()
+    #for member in user_data:
+    #    print(member.__enumerate__())
 
 @client.event
 async def on_member_join(member):
