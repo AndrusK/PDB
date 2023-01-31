@@ -17,12 +17,12 @@ TOKEN = ""
 HIDDEN_CHANNEL_ID = ""
 
 def read_config(cfg_path):
+    global TOKEN
     with open(cfg_path, 'r') as f:
-        y = json.load(f)
-        global TOKEN
-        TOKEN = y['token']
-        for i in y['whitelisted_users']:
-            whitelist.append(i)
+        field = json.load(f)
+        TOKEN = field['token']
+        for user in field['whitelisted_users']:
+            whitelist.append(user)
 
 def str_time(time_object):
     time_object.strftime("%m-%d-%Y")
@@ -53,10 +53,10 @@ def timed_functionality():
 
 def run_daily():
     print("function ran successfully")
-    #whitelist_raw = open("whitelist.txt","r").readlines()
-    #whitelist = list(map(str.strip, whitelist_raw))
-    #generate_excel_sheet(user_data)
-    #upload_excel_sheet("current","11231231231212")
+
+
+
+
     
 class DiscordMember:
     def __init__(self, id, name, join_date, create_date):
@@ -88,7 +88,6 @@ async def on_ready():
     print(f'Connected to Discord with user {client.user}')
     first_run()
     for member in user_data:
-       #print(member.__enumerate__())
         if str_time(member.join_date) == str_time(member.create_date):
             print(f'[Suspicious] Join/Create Day Match: {member.__enumerate__()}')
 
@@ -106,7 +105,6 @@ async def on_message(message):
             print(member.__enumerate__())
 
 def main(token):
-    print(whitelist)
     thread = threading.Thread(target=timed_functionality)
     thread.start()
     client.run(token)

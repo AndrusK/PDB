@@ -1,0 +1,9 @@
+discord
+xlsxwriter
+argparse
+time
+schedule
+asyncio
+datetime
+threading
+json
