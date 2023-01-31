@@ -24,10 +24,16 @@ class DiscordMember:
         self.create_date = create_date
         self.message_count = 0
         self.last_post = None
-        if str_time(self.join_date) == str_time(self.create_date) and not self.id in whitelist:
-            self.suspicious = True
+
+        if not self.id in whitelist:
+            if str_time(self.create_date) == str_time(self.join_date):
+                self.suspicious_score = 2
+            elif self.create_date + timedelta(days = 90) >= self.create_date:
+                self.suspicious_score = 1
+            else:
+                self.suspicious_score = 0
         else:
-            self.suspicious = False
+            self.suspicious_score = -1
 
     def __enumerate__(self):
         return {
@@ -37,7 +43,7 @@ class DiscordMember:
                 'create_date':self.create_date, 
                 'message_count':self.message_count,
                 'last_post':self.last_post,
-                'suspicious':self.suspicious
+                'suspicious_score':self.suspicious_score
                 
                 }
 
@@ -94,12 +100,6 @@ def run_daily():
 async def on_ready():
     print(f'Connected to Discord with user {client.user}')
     first_run()
-    for member in user_data:
-
-        if str_time(member.create_date) == str_time(member.join_date):
-             print(f'[Suspicious] Join/Create day match: {member.__enumerate__()}')
-        elif member.create_date + timedelta(days = 90) >= member.create_date:
-            print(f'[Possibly Suspicious] Join/Create within 90 days: {member.__enumerate__()}')
 
 @client.event
 async def on_member_join(member):
