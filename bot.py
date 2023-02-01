@@ -140,7 +140,6 @@ async def on_ready():
     print(f'Connected to Discord with user {client.user}:{client.user.id}')
     bots.append(client.user.id)
     first_run()
-    print(whitelist)
     for member in user_data:
         print(member.__enumerate__())
 
