@@ -2,5 +2,7 @@
     "token":"",
     "hidden_channel_id": "",
     "whitelisted_users": [
+    ],
+    "bots":[
     ]
 }

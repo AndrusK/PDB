@@ -6,6 +6,7 @@ import schedule
 from datetime import datetime, timedelta
 import threading
 import json
+import asyncio
 
 intents = discord.Intents.default()
 intents.members = True
@@ -13,6 +14,7 @@ client = discord.Client(intents=intents)
 config_file = ""
 user_data = []
 whitelist = []
+bots = []
 TOKEN = ""
 HIDDEN_CHANNEL_ID = ""
 
@@ -26,6 +28,9 @@ def days_since_post(last_post):
     else:
         return "No posts recorded"
 
+def generate_file_name():
+    return f'discord_datasheet_{str_time(datetime.now())}.xlsx'
+
 
 class DiscordMember:
     def __init__(self, id, name, join_date, create_date):
@@ -35,8 +40,14 @@ class DiscordMember:
         self.create_date = create_date
         self.message_count = 0
         self.last_post = None
+        if self.id == client.user.id:
+            self.bot = True
+        elif self.id in bots:
+            self.bot = True
+        else:
+            self.bot = False
 
-        if not self.id in whitelist:
+        if not self.id in whitelist and not self.id in bots:
             self.whitelisted = False
             if str_time(self.create_date) == str_time(self.join_date):
                 self.suspicious_score = 2
@@ -57,18 +68,23 @@ class DiscordMember:
                 'message_count':self.message_count,
                 'days_since_last_post':days_since_post(self.last_post),
                 'suspicious_score':self.suspicious_score,
-                'whitelisted':self.whitelisted
+                'whitelisted':self.whitelisted,
+                'bot':self.bot
                 
                 }
 
 
 def read_config(cfg_path):
     global TOKEN
+    global HIDDEN_CHANNEL_ID
     with open(cfg_path, 'r') as f:
         field = json.load(f)
         TOKEN = field['token']
+        HIDDEN_CHANNEL_ID = field['hidden_channel_id']
         for user in field['whitelisted_users']:
             whitelist.append(user)
+        for bot in field['bots']:
+            bots.append(bot)
 
 def argument_parser_init():
     parser = argparse.ArgumentParser(
@@ -89,7 +105,7 @@ def first_run():
             user_data.append(DiscordMember(member.id, member.name, member.joined_at, member.created_at))
 
 def generate_excel_sheet(discord_members):
-    file_name = f'discord_datasheet_{str_time(datetime.now())}.xlsx'
+    file_name = generate_file_name()
     workbook = xlsxwriter.Workbook(str(file_name), options={'remove_timezone': True})
     worksheet = workbook.add_worksheet()
     keys = list(discord_members[0].__enumerate__().keys())
@@ -102,21 +118,25 @@ def generate_excel_sheet(discord_members):
     workbook.close()
 
 
-
-def upload_excel_sheet(filepath, channel):
-    return 0
+async def upload_excel_sheet(channel_id):
+    await client.wait_until_ready()
+    channel = client.get_channel(channel_id)
+    await channel.send(file=discord.File(generate_file_name()))
+    await asyncio.sleep(10)
 
 def timed_functionality():
     schedule.every().day.at("20:00").do(run_daily)
     while True:
         schedule.run_pending()
         time.sleep(1)
-def run_daily():
+
+async def run_daily():
     generate_excel_sheet(user_data)
+    await upload_excel_sheet(HIDDEN_CHANNEL_ID)
     
 @client.event
 async def on_ready():
-    print(f'Connected to Discord with user {client.user}')
+    print(f'Connected to Discord with user {client.user}:{client.user.id}')
     first_run()
     print(whitelist)
     for member in user_data:
@@ -129,6 +149,8 @@ async def on_member_join(member):
 @client.event
 async def on_message(message):
     channel = message.channel
+    if message.author.id == client.user.id:
+        return
     for member in user_data:
         if member.id == message.author.id:
             member.message_count += 1
