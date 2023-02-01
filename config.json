@@ -1,6 +1,7 @@
 {
     "token":"",
     "hidden_channel_id": 0,
+    "glow_threshold": 30,
     "whitelisted_users": [
         0
     ],

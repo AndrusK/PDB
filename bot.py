@@ -17,6 +17,7 @@ whitelist = []
 bots = []
 TOKEN = ""
 HIDDEN_CHANNEL_ID = ""
+GLOW_THRESHOLD = 30
 
 def str_time(time_object):
     if not type(time_object) == None:
@@ -50,14 +51,14 @@ class DiscordMember:
         if not self.id in whitelist and not self.id in bots:
             self.whitelisted = False
             if str_time(self.create_date) == str_time(self.join_date):
-                self.suspicious_score = 2
-            elif self.create_date + timedelta(days = 90) >= self.join_date:
-                self.suspicious_score = 1
+                self.glow_points = 2
+            elif self.create_date + timedelta(days = GLOW_THRESHOLD) >= self.join_date:
+                self.glow_points = 1
             else:
-                self.suspicious_score = 0
+                self.glow_points = 0
         else:
             self.whitelisted = True
-            self.suspicious_score = -1
+            self.glow_points = -1
 
     def __enumerate__(self):
         return {
@@ -67,7 +68,7 @@ class DiscordMember:
                 'create_date':str_time(self.create_date), 
                 'message_count':self.message_count,
                 'days_since_last_post':days_since_post(self.last_post),
-                'suspicious_score':self.suspicious_score,
+                'glow_points':self.glow_points,
                 'whitelisted':self.whitelisted,
                 'bot':self.bot
                 
@@ -75,11 +76,11 @@ class DiscordMember:
 
 
 def read_config(cfg_path):
-    global TOKEN
-    global HIDDEN_CHANNEL_ID
+    global TOKEN, HIDDEN_CHANNEL_ID, GLOW_THRESHOLD
     with open(cfg_path, 'r') as f:
         field = json.load(f)
         TOKEN = field['token']
+        GLOW_THRESHOLD = field['glow_threshold']
         HIDDEN_CHANNEL_ID = field['hidden_channel_id']
         for user in field['whitelisted_users']:
             whitelist.append(user)
@@ -137,6 +138,7 @@ async def run_daily():
 @client.event
 async def on_ready():
     print(f'Connected to Discord with user {client.user}:{client.user.id}')
+    bots.append(client.user.id)
     first_run()
     print(whitelist)
     for member in user_data:
@@ -145,6 +147,10 @@ async def on_ready():
 @client.event
 async def on_member_join(member):
     user_data.append(DiscordMember(member.id, member.name, member.joined_at, member.created_at))
+    await client.wait_until_ready()
+    channel = client.get_channel(HIDDEN_CHANNEL_ID)
+    new_member = user_data[-1]
+    await channel.send(f"New member: {new_member['name']}\nGlow Score: {new_member['glow_score']}")
 
 @client.event
 async def on_message(message):
