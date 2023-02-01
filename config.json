@@ -1,8 +1,10 @@
 {
     "token":"",
-    "hidden_channel_id": "",
+    "hidden_channel_id": 0,
     "whitelisted_users": [
+        0
     ],
     "bots":[
+        0
     ]
 }
