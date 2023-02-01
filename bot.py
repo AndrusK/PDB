@@ -16,6 +16,17 @@ whitelist = []
 TOKEN = ""
 HIDDEN_CHANNEL_ID = ""
 
+def str_time(time_object):
+    if not type(time_object) == None:
+        return time_object.strftime("%m-%d-%Y")
+
+def days_since_post(last_post):
+    if not last_post == None:
+        return (datetime.now().astimezone() - last_post).days + 1
+    else:
+        return "No posts recorded"
+
+
 class DiscordMember:
     def __init__(self, id, name, join_date, create_date):
         self.id = id
@@ -39,16 +50,17 @@ class DiscordMember:
 
     def __enumerate__(self):
         return {
-                'id':self.id,
+                'id':str(self.id),
                 'name':self.name,
-                'join_date':self.join_date,
-                'create_date':self.create_date, 
+                'join_date':str_time(self.join_date),
+                'create_date':str_time(self.create_date), 
                 'message_count':self.message_count,
-                'last_post':self.last_post,
+                'days_since_last_post':days_since_post(self.last_post),
                 'suspicious_score':self.suspicious_score,
                 'whitelisted':self.whitelisted
                 
                 }
+
 
 def read_config(cfg_path):
     global TOKEN
@@ -71,22 +83,26 @@ def argument_parser_init():
     args = vars(parser.parse_args())
     return args["config_file"]
 
-def str_time(time_object):
-    return time_object.strftime("%m-%d-%Y")
-
-def days_since_post(last_post):
-    if not last_post == None:
-        return (datetime.now() - last_post).days
-    else:
-        return "No posts recorded"
-
 def first_run():
     for guild in client.guilds:
         for member in guild.members:
             user_data.append(DiscordMember(member.id, member.name, member.joined_at, member.created_at))
 
 def generate_excel_sheet(discord_members):
-    return 0
+    file_name = f'discord_datasheet_{str_time(datetime.now())}.xlsx'
+    workbook = xlsxwriter.Workbook(str(file_name), options={'remove_timezone': True})
+    worksheet = workbook.add_worksheet()
+    keys = list(discord_members[0].__enumerate__().keys())
+    for key in keys:
+        worksheet.write(0,keys.index(key), key)
+
+    for member in discord_members:
+        for key in member.__enumerate__():
+            worksheet.write(discord_members.index(member)+1, list(member.__enumerate__().keys()).index(key), member.__enumerate__()[key])
+    workbook.close()
+
+
+
 def upload_excel_sheet(filepath, channel):
     return 0
 
@@ -95,10 +111,9 @@ def timed_functionality():
     while True:
         schedule.run_pending()
         time.sleep(1)
-
 def run_daily():
-    print("function ran successfully")
-
+    generate_excel_sheet(user_data)
+    
 @client.event
 async def on_ready():
     print(f'Connected to Discord with user {client.user}')
