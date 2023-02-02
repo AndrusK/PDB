@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import discord
 import json
+import os
 import schedule
 import threading
 import time
@@ -22,7 +23,7 @@ GLOW_THRESHOLD = 30 # Loaded from config
 # Formats a datetime object to something like: 2-31-2023
 def str_time(time_object):
     if not type(time_object) == None:
-        return time_object.strftime("%m-%d-%Y")
+        return time_object.strftime("%Y-%m-%d")
 
 # Calculates days since last post by subtracting the current date and time from the DiscordMember.last_post
 def days_since_post(last_post):
@@ -80,8 +81,6 @@ class DiscordMember:
                 
                 }
 
-
-
 # Reads in the config file, and initializes a few variables with values from the config file
 def read_config(cfg_path): 
     global TOKEN, HIDDEN_CHANNEL_ID, GLOW_THRESHOLD
@@ -110,10 +109,11 @@ def argument_parser_init():
     return args["config_file"]
 
 # Grabs all current users, grabs relevant data, throws it into the list user_data
-def first_run():
+async def first_run():
     for guild in client.guilds:
         for member in guild.members:
             user_data.append(DiscordMember(member.id, member.name, member.joined_at, member.created_at))
+    await run_daily()
 
 # Creates an xlsx file from data within user_data
 def generate_excel_sheet(discord_members):
@@ -147,13 +147,14 @@ def timed_functionality():
 async def run_daily():
     generate_excel_sheet(user_data)
     await upload_excel_sheet(HIDDEN_CHANNEL_ID)
-
+    os.remove(generate_file_name())
+    
 # Handles initial connection of the bot, adds itself to the bots list, then calls the first_run function
 @client.event
 async def on_ready():
     print(f'Connected to Discord with user {client.user}:{client.user.id}')
     bots.append(client.user.id)
-    first_run()
+    await first_run()
     for member in user_data:
         print(member.__enumerate__())
 
