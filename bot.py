@@ -1,17 +1,22 @@
 import argparse
 import asyncio
 import discord
+from discord.ext import commands, tasks
 import json
 import os
-import schedule
-import threading
-import time
+#import schedule
+#import threading
+#import time
 import xlsxwriter
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
+from pytz import timezone
+
 
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Client(intents=intents)
+tz = datetime.now().astimezone(timezone('US/Eastern')).tzinfo #sets timezone
+at_8pm = time(hour=20, minute=00, second=0, microsecond=0, tzinfo=tz) # defines what 8pm is
 config_file = "" # Changed on runtime by calling the bot with the '-c' and a config file path
 user_data = [] # Grabbed initially on initilization of bot, this stores all the data of the discord members, is later appended to whenever someone joins
 whitelist = [] # Loaded from config
@@ -28,7 +33,7 @@ def str_time(time_object):
 # Calculates days since last post by subtracting the current date and time from the DiscordMember.last_post
 def days_since_post(last_post):
     if not last_post == None:
-        return (datetime.now().astimezone() - last_post).days + 1
+        return (datetime.now().astimezone() - last_post).days
     else:
         return "No posts recorded"
 
@@ -113,7 +118,6 @@ async def first_run():
     for guild in client.guilds:
         for member in guild.members:
             user_data.append(DiscordMember(member.id, member.name, member.joined_at, member.created_at))
-    await run_daily()
 
 # Creates an xlsx file from data within user_data
 def generate_excel_sheet(discord_members):
@@ -137,26 +141,33 @@ async def upload_excel_sheet(channel_id):
     await asyncio.sleep(10)
 
 # Initializes the scheduled task, which is running the run_daily function
-def timed_functionality():
-    schedule.every().day.at("20:00").do(run_daily)
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+#def timed_functionality():
+#    schedule.every().day.at("20:00").do(run_daily)
+#    while True:
+#        schedule.run_pending()
+#        time.sleep(1)
 
 # Ran daily by timed_functionality, this generates an xlsx sheet and then uploads it to the channel specified within the config
-async def run_daily():
-    generate_excel_sheet(user_data)
-    await upload_excel_sheet(HIDDEN_CHANNEL_ID)
-    os.remove(generate_file_name())
+#async def run_daily():
+#    generate_excel_sheet(user_data)
+#    await upload_excel_sheet(HIDDEN_CHANNEL_ID)
+#    os.remove(generate_file_name())  REPLACED BY daily_run
     
 # Handles initial connection of the bot, adds itself to the bots list, then calls the first_run function
 @client.event
 async def on_ready():
-    print(f'Connected to Discord with user {client.user}:{client.user.id}')
+    print(f'Connected to Discord with user {client.user}')
     bots.append(client.user.id)
     await first_run()
-    for member in user_data:
-        print(member.__enumerate__())
+    daily_run.start()
+    #for member in user_data:
+    #    print(member.__enumerate__())
+
+@tasks.loop(time=at_8pm)
+async def daily_run():
+    generate_excel_sheet(user_data)
+    await upload_excel_sheet(HIDDEN_CHANNEL_ID)
+    os.remove(generate_file_name())
 
 # Handles new members joining, adds new users to user_data, then messages the channel specified in the config with username and glow_score
 @client.event
@@ -181,12 +192,13 @@ async def on_message(message):
 
 # Starts thread for the timed_functionality function, runs the discord client (starting the bot)
 def main(token):
-    thread = threading.Thread(target=timed_functionality)
-    thread.start()
+    #thread = threading.Thread(target=timed_functionality)
+    #thread.start()
     client.run(token)
 
 # Entry point. Grabs the config location from argument parser. Reads config file and loads the values, calls main
 if __name__ == '__main__':
     config_location = argument_parser_init()
     read_config(config_location)
+    #print(tz)
     main(TOKEN)
